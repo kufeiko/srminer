@@ -1,0 +1,15 @@
+{
+    "name": "cnect/srminer",
+    "description": "Dig for information in SRM",
+    "type": "project",
+    "require": {
+        "drupal/drupal": "^7.53",
+        "phing/phing": "~2.10"
+    },
+    "repositories": {
+        "drupal": {
+            "type": "composer",
+            "url": "https://packages.drupal.org/7"
+        }
+    }
+}
