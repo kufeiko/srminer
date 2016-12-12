@@ -1,0 +1,5 @@
+name = SRMiner
+description = Digs for gold in SRM
+core = 7.x
+package = DGConnect
+dependencies[] = chr

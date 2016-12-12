@@ -2,7 +2,4 @@
     "name": "cnect/srminer",
     "description": "Dig for information in SRM",
     "type": "drupal-module",
-    "require": {
-        "drupal/drupal": "~7.0",
-    },
 }

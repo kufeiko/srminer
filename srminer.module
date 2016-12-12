@@ -1,0 +1,249 @@
+<?php
+
+/**
+ * @file
+ * Holds hooks and helper functions for the srminer module.
+ */
+
+// Calls block specific hooks and overrides & blocks content.
+require_once drupal_dirname(__FILE__) . '/srminer.blocks.inc';
+module_load_include('inc', 'srminer', 'srminer.query');
+
+/**
+ * Hook_menu() .
+ */
+function srminer_menu() {
+  $items = array();
+
+  $items['admin/config/services/srminer'] = array(
+    'title' => 'Srminer',
+    'description' => 'Configuration for Srminer',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+    'weight' => '0',
+  );
+  $items['admin/config/services/srminer/settings'] = array(
+    'title' => 'Settings for srminer',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_srminer_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'srminer.forms.inc',
+  );
+  $items['admin/config/services/srminer/show_structure/%'] = array(
+    'title' => 'Show SRM structure',
+    'page callback' => '_srminer_show_structure',
+    'page arguments' => array(5),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'srminer.pages.inc',
+  );
+  $items['admin/config/services/srminer/show_entities'] = array(
+    'title' => 'Show SRM entities',
+    'page callback' => '_srminer_show_entities',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'srminer.pages.inc',
+  );
+  $items['admin/config/services/srminer/test'] = array(
+    'title' => 'Make a test',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_srminer_test_form'),
+    'access arguments' => array('administer site configuration'),
+    // 'type' => MENU_LOCAL_TASK,.
+    'file' => 'srminer.forms.inc',
+  );
+  $items['admin/config/services/srminer/test2'] = array(
+    'title' => 'Make a test 2',
+    'page callback' => '_srminer_test2',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'srminer.pages.inc',
+  );
+  $items['srminer/activity/%'] = array(
+    'title' => 'Activities recorded in SRM',
+    'page callback' => '_srm_activity_recorded',
+    'page arguments' => array(2),
+    'access arguments' => array('access srm activity'),
+    'type' => MENU_SUGGESTED_ITEM,
+    'file' => 'srminer.pages.inc',
+  );
+  $items['user/%user/srm-profile'] = array(
+    'title' => 'SRM profile',
+    'page callback' => '_srminer_srm_profile',
+    'page arguments' => array(1),
+    'access callback' => '_srminer_srm_profile_access',
+    'access arguments' => array(1),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'srminer.pages.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function srminer_permission() {
+  return array(
+    'view own srm profile' => array(
+      'title' => t('View own SRM profile'),
+    ),
+    'view everyones srm profile' => array(
+      'title' => t("View everyone's SRM profile"),
+    ),
+  );
+}
+
+/**
+ * Test connector Fn .
+ */
+function _srminer_datatest($endpoint, $user, $pass) {
+
+  // headers: request json format.
+  $options['headers'] = array(
+    'Accept' => 'application/json',
+    'Content-Type' => 'application/json',
+  );
+  // Misc cURL options.
+  $options['curl_opts'] = array(
+    CURLOPT_HTTPAUTH => CURLAUTH_NTLM,
+    CURLOPT_USERPWD => $user . ':' . $pass,
+  );
+
+  // $endpoint = urlencode($endpoint);
+  return chr_curl_http_request($endpoint, $options);
+}
+
+
+/**
+ * @param $account array user account that belongs to the profile page.
+ *
+ * @return bool input for hookmenu access callback
+ */
+
+function _srminer_srm_profile_access($account) {
+  global $user;
+
+  //  if (user_access('view everyones srm activity') || ($uid == $user->uid && user_access('view own srm activity'))) {
+
+  return (($user->uid == $account->uid && user_access('view own srm profile')) || user_access('view everyones srm profile'));
+}
+
+/**
+ * Implements hook_theme().
+ */
+function srminer_theme() {
+  return array(
+    'srm_data' => array(
+      'variables' => array('srm_data' => array()),
+      'template' => 'srminer-srm-label-value',
+    ),
+  );
+}
+
+/**
+ * Defines all SRM fields used by Srminer.
+ *
+ * @param $fields_keys array of keys of the required fields.
+ * @return array associated including the key, SRM key, pertty name and value
+ * formatter
+ */
+function _srminer_field_definitions() {
+  return array(
+    'FirstName' => array(
+      'pretty_name' => t('First name'),
+      'formatter' => 'text',
+    ),
+    'LastName' => array(
+      'pretty_name' => t('Last name'),
+      'formatter' => 'text',
+    ),
+    'EMailAddress1' => array(
+      'pretty_name' => t('E-mail address'),
+      'formatter' => 'text',
+    ),
+    'EMailAddress2' => array(
+      'pretty_name' => t('E-mail address'),
+      'formatter' => 'text',
+    ),
+    'EMailAddress3' => array(
+      'pretty_name' => t('E-mail address'),
+      'formatter' => 'text',
+    ),
+    'Telephone1' => array(
+      'pretty_name' => t('Telephone number'),
+      'formatter' => 'text',
+    ),
+    'Telephone2' => array(
+      'pretty_name' => t('Telephone number'),
+      'formatter' => 'text',
+    ),
+    'Telephone3' => array(
+      'pretty_name' => t('Telephone number'),
+      'formatter' => 'text',
+    ),
+    'AssistantPhone' => array(
+      'pretty_name' => t('Telephone number assistant'),
+      'formatter' => 'text',
+    ),
+    'MobilePhone' => array(
+      'pretty_name' => t('Mobile phone number'),
+      'formatter' => 'text',
+    ),
+    'ManagerPhone' => array(
+      'pretty_name' => t('Manager\'s phone number'),
+      'formatter' => 'text',
+    ),
+    'DoNotPhone' => array(
+      'pretty_name' => t('Can be contacted via phone'),
+      'formatter' => 'neg_bool',
+    ),
+    'new_VIP' => array(
+      'pretty_name' => 'Is a very important person',
+      'formatter' => 'bool',
+    ),
+    'new_PRESS' => array(
+      'pretty_name' => 'Is a journalist',
+      'formatter' => 'bool',
+    ),
+    'ModifiedOn' => array(
+      'pretty_name' => 'Last update date',
+      'formatter' => 'date',
+    ),
+    'CreatedOn' => array(
+      'pretty_name' => 'Creation date of record',
+      'formatter' => 'date',
+    ),
+    'new_SalutationText' => array(
+      'pretty_name' => t('Salutation'),
+      'formatter' => 'text',
+    ),
+  );
+}
+
+/**
+ * Formats a SRM data value
+ *
+ * @param $value SRM data value e.g. first name
+ * @param $formatter type of formatting that must be applied
+ * @return string formatted value
+ */
+
+function _srminer_srm_value_formatter($value, $formatter) {
+
+  switch($formatter) {
+    case 'text':
+      $output = check_plain($value);
+      break;
+case 'date':
+      $output = check_plain($value);
+      break;
+case 'bool':
+      $output = $value == 1 ? t('Yes') : t('No');
+      break;
+    case 'neg_bool':
+      $output = $value == 0 ? t('Yes') : t('No');
+      break;
+  }
+
+  return $output;
+
+}
