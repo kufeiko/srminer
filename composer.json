@@ -5,10 +5,4 @@
     "require": {
         "drupal/drupal": "~7.0",
     },
-    "repositories": [
-        {
-            "url": "https://github.com/kufeiko/srminer.git",
-            "type": "git"
-        }
-    ]
 }
