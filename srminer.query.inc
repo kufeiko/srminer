@@ -78,6 +78,10 @@ function srminer_execute_query($query, $build = TRUE, $format = 'application/jso
     'error' => $response->code == 200 ? FALSE : $response->error,
   );
 
+  // @todo: make logging optional?
+  if ($result['error'] != 200) {
+    watchdog('SRMiner', $result['data']['error']['message']['value'] , array() ,WATCHDOG_ERROR);
+  }
   return $result;
 }
 
