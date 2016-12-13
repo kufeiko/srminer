@@ -233,10 +233,18 @@ function _srminer_srm_value_formatter($value, $formatter) {
     case 'text':
       $output = check_plain($value);
       break;
-case 'date':
-      $output = check_plain($value);
+    case 'date':
+      $matches = array();
+      $result = preg_match("/\d+/", $value, $matches);
+
+      if ($result = 1) {
+        $output = date("Y/m/d", substr($matches[0], 0, strlen($matches[0]) - 3));
+      }
+      else {
+        $output = 'Unknown.';
+      }
       break;
-case 'bool':
+    case 'bool':
       $output = $value == 1 ? t('Yes') : t('No');
       break;
     case 'neg_bool':
