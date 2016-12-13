@@ -79,7 +79,7 @@ function srminer_execute_query($query, $build = TRUE, $format = 'application/jso
   );
 
   // @todo: make logging optional?
-  if ($result['error'] != 200) {
+  if ($result['error']) {
     watchdog('SRMiner', $result['data']['error']['message']['value'] , array() ,WATCHDOG_ERROR);
   }
   return $result;
