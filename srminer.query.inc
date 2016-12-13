@@ -52,11 +52,11 @@ function srminer_execute_query($query, $build = TRUE, $format = 'application/jso
   // @todo: deal with request format.
 
   // Get user credentials.
-  $user = variable_get('srminer_user', FALSE);
-  $pass = variable_get('srminer_pass', FALSE);
+  $user = variable_get('srminer_user', '');
+  $pass = variable_get('srminer_pass', '');
 
   // Append to endpoint.
-  $url = trim(variable_get('srminer_endpoint', FALSE), '/') . '/' . $query;
+  $url = trim(variable_get('srminer_endpoint', ''), '/') . '/' . $query;
 
   // Fill curl parameters.
   $options['headers'] = array(

@@ -75,6 +75,13 @@ function srminer_menu() {
     'type' => MENU_LOCAL_TASK,
     'file' => 'srminer.pages.inc',
   );
+  $items['srm/json/%'] = array (
+    'title' => 'Autocomplete for SRM',
+    'page callback' => '_srminer_srm_autocomplete',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
   return $items;
 }
 
@@ -254,4 +261,109 @@ function _srminer_srm_value_formatter($value, $formatter) {
 
   return $output;
 
+}
+
+ /**
+ * Callback function for autocomplete.
+ */
+function _srminer_srm_autocomplete($field, $string = '') {
+
+  // Find out the field by the funny string in $field.
+  $parts = explode('.', $field);
+  $field_instance = field_info_instance($parts[0], $parts[1], $parts[2]);
+
+  $odata_entity = $field_instance['widget']['settings']['odata_entity'];
+  $odata_field = $field_instance['widget']['settings']['odata_field'];
+
+  $query = array(
+    'type' => 'get',
+    'entity' => $odata_entity,
+    'parameters' => array(
+      '$select' => array($odata_field),
+      '$filter' => array(
+        'startswith' => array($odata_field, "'{$string}'"),
+      ),
+    ),
+  );
+
+  $response = srminer_execute_query($query);
+  if(!$response['error']) {
+    $matches = array();
+    foreach($response['data']['d']['results'] as $row) {
+      $matches[$row[$odata_field]] = $row[$odata_field];
+    }
+    drupal_json_output($matches);
+  }
+
+  return;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ */
+function srminer_field_widget_info() {
+  return array(
+    'srm_textfield' => array(
+      'label' => t('SRM Text field'),
+      'field types' => array('text'),
+      'settings' => array(
+        'size' => 60,
+      ),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+        'default value' => FIELD_BEHAVIOR_DEFAULT,
+      ),
+      'weight' => 2,
+    ),
+  );
+}
+
+ /**
+ * Implements hook_field_widget_form().
+ */
+function srminer_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+
+  if($instance['widget']['type'] == 'srm_textfield') {
+    $main_widget = $element + array(
+      '#type' => 'textfield',
+      '#default_value' => isset($items[$delta]['value']) ? $items[$delta]['value'] : NULL,
+      '#size' => $instance['widget']['settings']['size'],
+      '#maxlength' => $field['settings']['max_length'],
+      '#attributes' => array('class' => array('srm-text')),
+      '#autocomplete_path' => 'srm/json/' . $instance['entity_type'] . '.' . $instance['field_name'] . '.' . $instance['bundle'],
+    );
+    $element['value'] = $main_widget;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_widget_settings_form().
+ */
+function srminer_field_widget_settings_form($field, $instance) {
+  $widget = $instance['widget'];
+  $settings = $widget['settings'];
+
+  $form['size'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Size of textfield'),
+    '#default_value' => $settings['size'],
+    '#required' => TRUE,
+    '#element_validate' => array('element_validate_integer_positive'),
+  );
+  $form['odata_entity'] = array(
+    '#type' => 'textfield',
+    '#title' => t('OData Entity Set to look up'),
+    '#default_value' => isset($settings['odata_entity']) ? $settings['odata_entity'] : '',
+    '#required' => TRUE,
+  );
+  $form['odata_field'] = array(
+    '#type' => 'textfield',
+    '#title' => t('OData Entity Field containing autocomplete data'),
+    '#default_value' => isset($settings['odata_field']) ? $settings['odata_field'] : '',
+    '#required' => TRUE,
+  );
+
+  return $form;
 }
