@@ -1,5 +1,8 @@
 {
     "name": "cnect/srminer",
     "description": "Dig for information in SRM",
-    "type": "drupal-custom-module"
+    "type": "drupal-custom-module",
+    "require": {
+        "drupal/chr": "^7.0"
+    }
 }
